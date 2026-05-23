@@ -13,18 +13,25 @@ namespace Damnbro.Weapons
 
         void Start()
         {
-            for (int i = 0; i < weapons.Count; i++)
-                if (weapons[i] != null) weapons[i].gameObject.SetActive(false);
-            if (weapons.Count > 0) Equip(Mathf.Clamp(startingIndex, 0, weapons.Count - 1));
+            if (weapons.Count == 0) return;
+            int target = _currentIndex >= 0 ? _currentIndex : Mathf.Clamp(startingIndex, 0, weapons.Count - 1);
+            Equip(target);
         }
 
         public void Equip(int index)
         {
             if (index < 0 || index >= weapons.Count) return;
-            if (index == _currentIndex) return;
-            Current?.OnUnequip();
+            bool changed = index != _currentIndex;
+            if (changed) Current?.OnUnequip();
             _currentIndex = index;
-            Current?.OnEquip();
+            if (changed) Current?.OnEquip();
+            SyncActive();
+        }
+
+        void SyncActive()
+        {
+            for (int i = 0; i < weapons.Count; i++)
+                if (weapons[i] != null) weapons[i].gameObject.SetActive(i == _currentIndex);
         }
 
         public void SelectSlot(int slot)

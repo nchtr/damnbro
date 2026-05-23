@@ -48,9 +48,9 @@ namespace Damnbro.UI
             if (ammoLabel != null && weapons != null && weapons.Current != null)
             {
                 var w = weapons.Current;
-                ammoLabel.text = w.magazineSize > 0 ? $"{w.AmmoInMag}/{w.magazineSize}" : "∞";
+                ammoLabel.text = w.magazineSize > 0 ? $"{w.AmmoInMag}/{w.magazineSize}" : "INF";
             }
-            if (dashLabel != null && player != null) dashLabel.text = new string('●', player.DashChargesRemaining);
+            if (dashLabel != null && player != null) dashLabel.text = new string('|', player.DashChargesRemaining);
             if (promptLabel != null && interaction != null)
             {
                 promptLabel.text = interaction.CurrentTarget != null ? interaction.CurrentTarget.Prompt : "";

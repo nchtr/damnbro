@@ -27,7 +27,11 @@ namespace Damnbro.Player
                 controller.SetMoveInput(move);
                 if (Input.GetKeyDown(jumpKey)) controller.QueueJump();
                 if (Input.GetKeyDown(dashKey)) controller.TryDash();
-                if (Input.GetKeyDown(slideKey)) controller.TrySlide();
+                if (Input.GetKeyDown(slideKey))
+                {
+                    if (controller.IsGrounded) controller.TrySlide();
+                    else controller.TrySlam();
+                }
                 if (Input.GetKeyDown(slamKey)) controller.TrySlam();
             }
 

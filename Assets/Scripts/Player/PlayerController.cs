@@ -32,6 +32,9 @@ namespace Damnbro.Player
         [Header("Slam")]
         public float slamSpeed = 40f;
         public float slamMinAirTime = 0.05f;
+        public float slamBounceVelocity = 16f;
+        public float slamHorizontalDamping = 30f;
+        public float slamLandHorizontalBoost = 1.2f;
 
         [Header("Wall Jump")]
         public float wallCheckDistance = 0.7f;
@@ -122,6 +125,7 @@ namespace Damnbro.Player
             if (IsSliding && (Time.time >= _slideEndTime || !IsGrounded)) EndSlide();
 
             if (IsDashing) DoDashMovement();
+            else if (IsSlamming) DoSlamMovement();
             else DoNormalMovement();
 
             HandleJump();
@@ -132,6 +136,15 @@ namespace Damnbro.Player
         void DoDashMovement()
         {
             _velocity = _dashDirection * dashSpeed;
+        }
+
+        void DoSlamMovement()
+        {
+            _velocity.y = -slamSpeed;
+            Vector3 horizontal = new(_velocity.x, 0, _velocity.z);
+            horizontal = Vector3.MoveTowards(horizontal, Vector3.zero, slamHorizontalDamping * Time.deltaTime);
+            _velocity.x = horizontal.x;
+            _velocity.z = horizontal.z;
         }
 
         void DoNormalMovement()
@@ -192,7 +205,9 @@ namespace Damnbro.Player
             if (IsSlamming)
             {
                 IsSlamming = false;
-                _velocity.y = jumpVelocity * 0.4f;
+                _velocity.y = slamBounceVelocity;
+                _velocity.x *= slamLandHorizontalBoost;
+                _velocity.z *= slamLandHorizontalBoost;
             }
         }
 

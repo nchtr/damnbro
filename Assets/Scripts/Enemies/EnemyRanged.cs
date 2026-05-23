@@ -16,7 +16,11 @@ namespace Damnbro.Enemies
         {
             base.Start();
             if (muzzle == null) muzzle = transform;
-            if (agent != null) attackRange = preferredDistance;
+            if (agent != null)
+            {
+                attackRange = preferredDistance;
+                agent.speed *= kiteSpeedMultiplier;
+            }
         }
 
         protected override void Update()
@@ -32,7 +36,6 @@ namespace Damnbro.Enemies
                     ? transform.position - toTarget.normalized * preferredDistance
                     : _target.position;
                 agent.SetDestination(desired);
-                agent.speed *= kiteSpeedMultiplier;
             }
 
             Vector3 facing = _target.position - transform.position;
@@ -56,10 +59,29 @@ namespace Damnbro.Enemies
 
         protected override void Attack()
         {
-            if (projectilePrefab == null || muzzle == null || _target == null) return;
+            if (muzzle == null || _target == null) return;
             Vector3 aim = (_target.position + Vector3.up - muzzle.position).normalized;
-            var p = Instantiate(projectilePrefab, muzzle.position, Quaternion.LookRotation(aim));
+            Projectile p = projectilePrefab != null
+                ? Instantiate(projectilePrefab, muzzle.position, Quaternion.LookRotation(aim))
+                : BuildFallbackShot(muzzle.position, aim);
             p.Launch(aim * projectileSpeed, gameObject);
+        }
+
+        Projectile BuildFallbackShot(Vector3 pos, Vector3 dir)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = "EnemyShot";
+            go.transform.position = pos;
+            go.transform.rotation = Quaternion.LookRotation(dir);
+            go.transform.localScale = Vector3.one * 0.3f;
+            var rend = go.GetComponent<MeshRenderer>();
+            if (rend != null) rend.material.color = new Color(1f, 0.4f, 0f);
+            var rb = go.AddComponent<Rigidbody>();
+            rb.useGravity = false;
+            var proj = go.AddComponent<Projectile>();
+            proj.damage = 12f;
+            proj.lifetime = 5f;
+            return proj;
         }
     }
 }

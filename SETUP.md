@@ -1,95 +1,72 @@
 # Assembly & configuration
 
-The demo scene at `Assets/Scenes/Demo.unity` already contains:
+The demo scene at `Assets/Scenes/Demo.unity` ships with everything wired:
 
-- Directional light + ground plane (on the `Ground` layer)
-- A complete Player rig (CharacterController, `PlayerController`, `PlayerInput`, `PlayerInteraction`, `HealthSystem`, `WeaponManager`, `Parry`)
-- A child `CameraRig` (Camera + AudioListener + `PlayerCamera` script), with all script references already wired
-- A grandchild empty `WeaponHolder`
-- A `GameManager` GameObject with the player's `HealthSystem` already referenced
+- Directional light + ground plane
+- Player rig: CharacterController, `PlayerController`, `PlayerInput`, `PlayerInteraction`, `HealthSystem`, `WeaponManager`, `Parry`
+- A blue capsule **PlayerModel** child as the player visual (collider stripped)
+- `CameraRig` (Camera + AudioListener + `PlayerCamera`) and a `WeaponHolder` child
+- Three weapons under `WeaponHolder` (already in `WeaponManager.weapons`):
+  - **Revolver** (slot 0) — `HitscanWeapon`, 25 dmg, 6-round mag
+  - **Knife** (slot 1) — `MeleeWeapon`, 50 dmg, infinite mag
+  - **Launcher** (slot 2) — `ProjectileWeapon` firing `Assets/Prefabs/Projectile.prefab` (radius-4 explosion)
+- `GameManager` for cursor toggle and respawn
+- `SceneServices` GameObject with `RuntimeNavMeshBaker`, `WaveSpawner`, and `StyleMeter`
+- A `Canvas` containing the existing `HUD` (TMP text components), wired to the player
 
-`ProjectSettings/TagManager.asset` is pre-populated with the `Player` tag and the `Player` / `Enemy` / `Interactable` / `Ground` layers. `InputManager.asset` ships with the default legacy axes that `PlayerInput.cs` reads.
+Press **Play** in the demo scene — nothing else to set up.
 
-So once Unity finishes its first import, **press Play in `Demo.unity` and you'll already have movement, looking, dashing, sliding, slamming, wall-jumping, and parry — there just aren't any enemies or weapons yet.**
+## Controls
 
-## 0. Open the project
+| Action       | Key                       |
+| ------------ | ------------------------- |
+| Move         | WASD                      |
+| Look         | Mouse                     |
+| Jump         | Space                     |
+| Dash         | Left Shift                |
+| Slide        | Left Ctrl (on ground)     |
+| Ground slam  | Left Ctrl (in air) or C   |
+| Wall jump    | Space (next to wall)      |
+| Fire         | LMB                       |
+| Alt-fire     | RMB                       |
+| Reload       | R                         |
+| Switch weapon| Mouse wheel / 1–3         |
+| Interact     | E                         |
+| Parry / melee| F                         |
+| Free cursor  | Esc                       |
 
-1. Launch Unity Hub → **Add → Add project from disk** → pick this folder.
-2. If Hub prompts you to install Unity 2022.3.20f1, accept (any 2022.3.x LTS works).
-3. Open the project. Wait for the package resolver and asset import to finish.
-4. Open `Assets/Scenes/Demo.unity` (already in the build settings as scene 0).
+`Ctrl` is context-sensitive — slide when grounded, slam when airborne. The dedicated `C` key still works for slam if you prefer it explicit.
 
-## 1. Add a weapon
+## Customising
 
-1. In the Hierarchy, find `Player → CameraRig → WeaponHolder`.
-2. Right-click `WeaponHolder` → **Create Empty**, name it `Revolver`.
-3. Add component **HitscanWeapon**. Configure:
-   - `View Camera` → drag the `CameraRig` Camera component
-   - `Muzzle` → for now, drag `WeaponHolder` itself (you can refine with a barrel-tip empty later)
-   - `Hit Mask` → set to everything **except** the `Player` layer
-   - `Damage` 25 · `Range` 200 · `Fire Rate` 4 · `Magazine Size` 6
-4. Select `Player`, find the **Weapon Manager** component, expand `Weapons`, drag the `Revolver` GameObject into the list.
+### Adjust weapons
+Select `Player → CameraRig → WeaponHolder → Revolver` (or Knife/Launcher) and edit the inspector — `damage`, `fireRate`, `magazineSize`, `spreadDegrees`, etc. To add a fourth weapon, duplicate one of the three, change its component and `slot`, then drag it into `Player → WeaponManager → Weapons`.
 
-Add more (`Shotgun` via `HitscanWeapon` with `Pellets = 8`, `Spread Degrees = 5`; `Launcher` via `ProjectileWeapon` with a projectile prefab) the same way and bump their `Slot` values to 1, 2, etc.
+### Tune the spawner
+Select `SceneServices → WaveSpawner`. The `Waves` list is empty by default, so the spawner generates three default waves (3M, 4M+1R, 5M+2R) on Start. Override by populating the list in the inspector. You can also drop Transforms into `Spawn Points` to use fixed locations instead of the player-relative ring.
 
-### Making a projectile prefab
+### Use prefab enemies
+By default enemies are built from primitive capsules. Drag a prefab into `WaveSpawner.meleePrefab` / `rangedPrefab` to use your own.
 
-1. **GameObject → 3D Object → Sphere**, scale `(0.2, 0.2, 0.2)`.
-2. Add **Rigidbody** (disable Use Gravity).
-3. Add **Projectile** script. Set `Damage` 30, `Explosion Radius` 4 for a rocket, 0 for a bullet.
-4. Drag the GameObject into `Assets/Prefabs/` (create the folder) to make a prefab, then delete the in-scene copy.
-5. Assign that prefab to your `ProjectileWeapon`'s `Projectile Prefab` field.
+### Wire the wave label
+Add a `TMP_Text` element to the HUD canvas, then drag it into `WaveSpawner.waveLabel` on `SceneServices`. The spawner will display wave state ("Wave 2 — 4M / 1R", "Wave 1 cleared", etc.).
 
-## 2. Add enemies
+### Replace placeholder weapon meshes
+Swap the cube mesh on each weapon GameObject (Mesh Filter component) for your imported model and resize the Transform. The collider-less placeholders won't fight your geometry.
 
-1. **GameObject → 3D Object → Capsule**, position it ~10 m from the Player.
-2. Set its layer to `Enemy`.
-3. Add components: **NavMeshAgent**, **HealthSystem**, and either **EnemyMelee** or **EnemyRanged**.
-4. For `EnemyRanged`, drag the projectile prefab from step 1 into the `Projectile Prefab` field and create an empty child as `Muzzle`.
-5. **Window → AI → Navigation** → **Bake** so the agents have a NavMesh to walk on.
-6. Press Play — they should chase and attack.
+### Replace the player capsule
+Reparent your character mesh under `Player` and delete the `PlayerModel` capsule. Make sure no collider is on the visual — the `CharacterController` is the only collider that should be on the player.
 
-## 3. Add interactables
-
-- **Door:** parent a cube to an empty pivot at the door's hinge edge. Put `DoorInteractable` on the parent. Press `E` near it to swing.
-- **Pickup:** any object with a trigger collider + `PickupInteractable` (type = Health, amount = 25). With `autoPickup = true` it heals on touch; with `false` press `E`.
-
-## 4. Add a HUD
-
-1. **GameObject → UI → Canvas**.
-2. Inside the Canvas create:
-   - `Slider` named `HealthBar`
-   - `TextMeshPro - Text` named `HealthLabel`, `AmmoLabel`, `DashLabel`, `PromptLabel`, `StyleRankLabel`
-   - `Slider` named `StyleBar`
-3. Add a `HUD` component to the Canvas root. Drag the Player's `HealthSystem`, `PlayerController`, `PlayerInteraction`, `WeaponManager` into the matching fields. Drag each UI element into its slot.
-4. Optionally add a `StyleMeter` component to the Player and drag it into the HUD's `Style` field — the meter currently only gets points from successful parries; add `style.AddPoints(...)` calls wherever you want to reward kills.
-
-## 5. (Optional) Switch to the new Input System
-
-The demo uses the legacy `PlayerInput` script. To swap in the new Input System:
-
-1. **Edit → Project Settings → Player → Other Settings → Active Input Handling** → set to **Both** or **Input System Package (New)** and restart the editor when prompted.
-2. On the **Player** GameObject, remove `PlayerInput` and add `PlayerInputNew` instead.
-3. Drag `Assets/Input/Controls.inputactions` into `PlayerInputNew`'s `Actions` field.
-4. Re-wire `Controller`, `Camera Rig`, `Interaction`, `Weapons`, `Parry` (same fields as the legacy version).
-
-The provided `Controls.inputactions` already maps WASD, mouse look, Space/Shift/Ctrl/C/E/R/F, LMB/RMB, mouse-wheel, and 1–5.
-
-## 6. (Optional) Use Parry
-
-The Player already has a `Parry` component wired to the camera. Press `F` to do a forward melee sweep that:
-
-- Damages anything with a `HealthSystem` in front of the player
-- **Reflects** any `Projectile` in range — it flips ownership and multiplies damage, so enemy rockets fly back at the shooter
-- Awards style points if a reflect succeeds (set `Style Meter` on the Parry component to enable)
-
-To make this more visible, assign a `Parry Fx Prefab` (e.g. a quick particle effect) to spawn at the reflect point.
+### Switch to the new Input System
+1. **Edit → Project Settings → Player → Other Settings → Active Input Handling** → **Both** or **Input System Package (New)**. Restart the editor.
+2. On the Player GameObject, remove `PlayerInput` and add `PlayerInputNew`.
+3. Drag `Assets/Input/Controls.inputactions` into `PlayerInputNew.Actions`.
+4. Re-wire `Controller`, `Camera Rig`, `Interaction`, `Weapons`, `Parry`.
 
 ## Common pitfalls
 
-- **Camera doesn't rotate / scripts marked "missing":** Unity needs to compile the C# first. Wait until the spinner in the bottom-right of the editor stops, then re-open the scene. The wired references in the scene reference scripts by GUID, so once the scripts compile they will populate.
-- **Player slides forever on slopes:** that's the slide ability while it's active. If it's happening during plain walking, raise `Ground Friction` on the `PlayerController`.
-- **Hitscan never hits enemies:** make sure enemy colliders are not on the `Player` layer and `Hit Mask` on the weapon includes the `Enemy` layer.
-- **Enemies don't move:** the NavMesh isn't baked, or the enemy isn't on it. Re-bake with **Window → AI → Navigation → Bake**.
-- **Dash doesn't recharge:** check `Max Dash Charges` ≥ 1 and `Dash Recharge Time` > 0.
-- **Materials show pink:** URP needs its global settings asset. The first time the editor opens, accept the prompt to **Create URP Asset** or use **Window → Rendering → Render Pipeline Converter** to update the built-in default material.
+- **Pink materials:** URP needs its global render-pipeline asset assigned. Open **Project Settings → Graphics → Scriptable Render Pipeline Settings** and pick a URP Asset (Unity's URP package ships one).
+- **Hitscan shots invisible:** `HitscanWeapon` draws a thin yellow tracer automatically (built-in `Sprites/Default` material). If you see nothing, the shader is missing in your build profile — assign a `LineRenderer` prefab to the weapon's `Tracer Prefab` field as a fallback.
+- **Launcher rocket detonates on the player:** make sure the Launcher's `Muzzle` transform isn't inside the CharacterController. The default scene puts it at the cube origin, slightly in front of the camera, which is safe.
+- **Enemies stand still:** the NavMesh is rebuilt at Awake by `RuntimeNavMeshBaker`. If you've made the ground larger than 80×80, raise `Bounds Size` on that component.
+- **No HUD updates:** the `HUD` component on the `UI` Canvas needs the `Health`, `Player`, `Interaction`, `Weapons`, and `Style` source slots wired to the Player components and the SceneServices StyleMeter. The default scene does this — if you re-create the scene, redo it.

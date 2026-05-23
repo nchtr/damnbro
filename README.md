@@ -9,13 +9,14 @@ enemy base class, and a style-meter scaffold.
 This repo contains:
 
 - C# gameplay scripts under `Assets/Scripts/`
-- A pre-wired demo scene at `Assets/Scenes/Demo.unity` (Player rig + camera + ground + light + GameManager)
+- A fully-wired demo scene at `Assets/Scenes/Demo.unity` — player rig, camera, ground, light, GameManager, player capsule visual, three weapon GameObjects (Revolver / Knife / Launcher), HUD canvas, and a `SceneServices` object with the NavMesh baker, wave spawner, and style meter
+- `Assets/Prefabs/Projectile.prefab` — the rocket the Launcher fires
 - `Assets/Input/Controls.inputactions` for the new Input System variant
-- Project settings with the `Player`/`Enemy`/`Interactable`/`Ground` layers + `Player` tag already configured
-- Unity package manifest pinned to URP + Cinemachine + TMP + Input System
+- Project settings with the `Enemy` layer + `Player` tag configured
+- Unity package manifest pinned to URP + Cinemachine + TMP + Input System + `com.unity.ai.navigation`
 - A `ProjectVersion.txt` targeting **Unity 2022.3 LTS**
 
-You still need to add prefabs, materials, weapons, enemies, and the HUD canvas inside the editor — [SETUP.md](SETUP.md) walks you through it.
+Just open the scene and press **Play**. See [SETUP.md](SETUP.md) for what to customise.
 
 ## Requirements
 
@@ -45,18 +46,19 @@ You still need to add prefabs, materials, weapons, enemies, and the HUD canvas i
 | Fire         | LMB                 |
 | Alt-fire     | RMB                 |
 | Reload       | R                   |
-| Switch wpn   | Mouse wheel / 1–9   |
+| Switch wpn   | Mouse wheel / 1–3   |
 | Interact     | E                   |
 | Parry / melee| F                   |
+| Slide / slam | Left Ctrl (context) |
 | Free cursor  | Esc                 |
 
 ## Script overview
 
 ```
 Assets/Scripts/
-  Core/        GameManager
+  Core/        GameManager, RuntimeNavMeshBaker, WaveSpawner, EnemyFactory
   Player/      PlayerController, PlayerCamera, PlayerInput, PlayerInputNew, PlayerInteraction, HealthSystem, Parry
-  Weapons/     WeaponManager, WeaponBase, HitscanWeapon, ProjectileWeapon, Projectile
+  Weapons/     WeaponManager, WeaponBase, HitscanWeapon, MeleeWeapon, ProjectileWeapon, Projectile
   Enemies/     EnemyBase, EnemyMelee, EnemyRanged
   World/       IInteractable, DoorInteractable, PickupInteractable
   UI/          HUD, StyleMeter
@@ -73,10 +75,11 @@ Two interchangeable drivers are included:
 
 ## Extending
 
-- **New weapon:** subclass `WeaponBase` and override `Fire()` (and optionally `AltFire()`). Add it as a child of the camera and register it in `WeaponManager.weapons`.
-- **New enemy:** subclass `EnemyBase` and override `Attack()` — see `EnemyRanged` for a projectile-firing example.
+- **New weapon:** subclass `WeaponBase` and override `Fire()` (and optionally `AltFire()`). Add a GameObject under `Player → CameraRig → WeaponHolder` with the component, then drag it into `WeaponManager.weapons` on the Player.
+- **New enemy:** subclass `EnemyBase` and override `Attack()`. See `EnemyRanged` for a projectile-firing example and `EnemyFactory` for how to spin one up from primitives.
 - **New interactable:** implement `IInteractable` and put a collider on the object so the player's interaction raycast can hit it.
-- **Parry:** `Parry.cs` does an `OverlapSphere` along the camera-forward. It calls `Projectile.Reflect(player)` on any projectile it sweeps, which flips ownership and damage, so enemy shots fly back and hurt them.
+- **Parry:** `Parry.cs` does a `SphereCastAll` along camera-forward. It calls `Projectile.Reflect(player)` on any projectile it sweeps, which flips ownership and damage, so enemy shots fly back and hurt them.
+- **Waves:** edit the `WaveSpawner` on the `SceneServices` GameObject. Empty list = three default waves; populated list = your own schedule.
 
 ## License
 

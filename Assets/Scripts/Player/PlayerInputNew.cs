@@ -56,7 +56,7 @@ namespace Damnbro.Player
 
             _jump.performed += _ => controller?.QueueJump();
             _dash.performed += _ => controller?.TryDash();
-            _slide.performed += _ => controller?.TrySlide();
+            _slide.performed += _ => { if (controller == null) return; if (controller.IsGrounded) controller.TrySlide(); else controller.TrySlam(); };
             _slam.performed += _ => controller?.TrySlam();
             _interact.performed += _ => interaction?.TryInteract();
             _reload.performed += _ => weapons?.TriggerReload();

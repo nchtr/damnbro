@@ -49,8 +49,21 @@ namespace Damnbro.Weapons
 
         void SpawnTracer(Vector3 a, Vector3 b)
         {
-            if (tracerPrefab == null) return;
-            var t = Instantiate(tracerPrefab);
+            LineRenderer t;
+            if (tracerPrefab != null)
+            {
+                t = Instantiate(tracerPrefab);
+            }
+            else
+            {
+                var go = new GameObject("Tracer");
+                t = go.AddComponent<LineRenderer>();
+                t.startWidth = 0.04f;
+                t.endWidth = 0.01f;
+                t.material = new Material(Shader.Find("Sprites/Default"));
+                t.startColor = new Color(1f, 0.95f, 0.6f, 1f);
+                t.endColor = new Color(1f, 0.6f, 0.1f, 0f);
+            }
             t.positionCount = 2;
             t.SetPosition(0, a);
             t.SetPosition(1, b);
